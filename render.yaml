@@ -1,6 +1,6 @@
 services:
   - type: web
     name: clarion-alert-bot
-    env: python
+    runtime: python
     plan: free
     startCommand: python main.py
