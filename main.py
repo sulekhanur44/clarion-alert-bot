@@ -41,6 +41,7 @@ def run():
 Thread(target=run).start()
 
 print("🤖 Bot started...")
+send_alert("🧪 TEST: Clarion bot is working!", "https://example.com/test-listing")
 while True:
     try:
         for t, u in get_listings():
