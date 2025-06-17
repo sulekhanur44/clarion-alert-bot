@@ -1,25 +1,26 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 import time
 from flask import Flask
 from threading import Thread
 
-# ========== SETUP ==========
-TELEGRAM_BOT_TOKEN = "8191093355:AAHopcy7mOTVOX5d9EIoseCIIDm-K5DbbLg"
-TELEGRAM_CHAT_ID = "7958138108"
+# ============== SETUP (Now using environment variables) ==============
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 MOVINGSOON_URL = "https://movingsoon.co.uk/housing-association/clarion-housing/"
 seen = set()
 
-# ========== TELEGRAM ALERT ==========
+# ============== TELEGRAM ALERT ==============
 def send_alert(title, url):
-    text = f"🏠 New Clarion listing:\n{title}\n{url}"
+    text = f"\U0001F3E0 New Clarion listing:\n{title}\n{url}"
     r = requests.post(
         f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
         data={"chat_id": TELEGRAM_CHAT_ID, "text": text}
     )
-    print("📨 Sent alert:", title)
+    print("\U0001F4E8 Sent alert:", title)
 
-# ========== SCRAPER ==========
+# ============== WEB SCRAPER ==============
 def get_listings():
     response = requests.get(MOVINGSOON_URL)
     soup = BeautifulSoup(response.text, "html.parser")
@@ -33,35 +34,37 @@ def get_listings():
             new.append((title, url))
     return new
 
-# ========== FLASK SERVER ==========
+# ============== FLASK SERVER ==============
 app = Flask('')
+
 @app.route('/')
 def home():
-    return "✅ Clarion bot is running!"
+    return "\u2705 Clarion bot is running!"
 
 def run():
     app.run(host='0.0.0.0', port=10000)
 
-# ========== SELF PING ==========
+# ============== SELF-PING FUNCTION ==============
 def self_ping():
     while True:
         try:
-            requests.get("https://clarion-alert-bot.onrender.com")
+            requests.get("https://clarion-alert-bot.onrender.com")  # Update if URL changes
         except:
             pass
         time.sleep(60)
 
-# ========== START SERVICES ==========
+# ============== START SERVER + SELF-PING ==============
 Thread(target=run).start()
 Thread(target=self_ping).start()
 
-# ========== MAIN LOOP ==========
-print("🤖 Bot started...")
+# ============== MAIN BOT LOOP ==============
+print("\U0001F916 Bot started...")
 while True:
     try:
-        for title, url in get_listings():
+        new_listings = get_listings()
+        for title, url in new_listings:
             send_alert(title, url)
-        print("✅ Checked for new listings.")
+        print("\u2705 Checked for new listings.")
     except Exception as e:
-        print("⚠️ Error:", e)
+        print("\u26A0\uFE0F Error:", e)
     time.sleep(60)
