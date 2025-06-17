@@ -4,32 +4,36 @@ import time
 from flask import Flask
 from threading import Thread
 
-TELEGRAM_BOT_TOKEN = "8191...bbLg"
-TELEGRAM_CHAT_ID = "7958..."
+# ========== SETUP ==========
+TELEGRAM_BOT_TOKEN = "8191093355:AAHopcy7mOTVOX5d9EIoseCIIDm-K5DbbLg"
+TELEGRAM_CHAT_ID = "7958138108"
 MOVINGSOON_URL = "https://movingsoon.co.uk/housing-association/clarion-housing/"
 seen = set()
 
+# ========== TELEGRAM ALERT ==========
 def send_alert(title, url):
     text = f"🏠 New Clarion listing:\n{title}\n{url}"
-    requests.post(
+    r = requests.post(
         f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
         data={"chat_id": TELEGRAM_CHAT_ID, "text": text}
     )
     print("📨 Sent alert:", title)
 
+# ========== SCRAPER ==========
 def get_listings():
-    rsp = requests.get(MOVINGSOON_URL)
-    soup = BeautifulSoup(rsp.text, "html.parser")
-    items = soup.select(".property-content h2 a")
+    response = requests.get(MOVINGSOON_URL)
+    soup = BeautifulSoup(response.text, "html.parser")
+    listings = soup.select(".property-content h2 a")
     new = []
-    for itm in items:
-        url = itm['href']
-        title = itm.get_text(strip=True)
+    for item in listings:
+        url = item['href']
+        title = item.get_text(strip=True)
         if url not in seen:
             seen.add(url)
             new.append((title, url))
     return new
 
+# ========== FLASK SERVER ==========
 app = Flask('')
 @app.route('/')
 def home():
@@ -38,14 +42,25 @@ def home():
 def run():
     app.run(host='0.0.0.0', port=10000)
 
-Thread(target=run).start()
+# ========== SELF PING ==========
+def self_ping():
+    while True:
+        try:
+            requests.get("https://clarion-alert-bot.onrender.com")
+        except:
+            pass
+        time.sleep(60)
 
+# ========== START SERVICES ==========
+Thread(target=run).start()
+Thread(target=self_ping).start()
+
+# ========== MAIN LOOP ==========
 print("🤖 Bot started...")
-send_alert("🧪 TEST: Clarion bot is working!", "https://example.com/test-listing")
 while True:
     try:
-        for t, u in get_listings():
-            send_alert(t, u)
+        for title, url in get_listings():
+            send_alert(title, url)
         print("✅ Checked for new listings.")
     except Exception as e:
         print("⚠️ Error:", e)
